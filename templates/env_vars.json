@@ -1,0 +1,18 @@
+[
+    {
+      "name" : "MONGO_USER",
+      "value" : "mongo"
+    },
+    {
+      "name" : "MONGO_PASSWORD",
+      "value" : "pass123"
+    },
+    {
+      "name" : "MONGO_HOST",
+      "value" : "localhost:27017"
+    },
+    {
+      "name" : "MONGO_DB_NAME",
+      "value" : "dbname"
+    }
+  ]
