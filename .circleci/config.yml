@@ -1,0 +1,116 @@
+version: 2.1
+
+orbs:
+  aws-ecr: circleci/aws-ecr@7.0.0
+  aws-ecs: circleci/aws-ecs@1.1.0
+
+common_config: &common
+  account-url: AWS_ECR_ACCOUNT_URL
+  aws-access-key-id: ACCESS_KEY_ID
+  aws-secret-access-key: SECRET_ACCESS_KEY
+  region: AWS_REGION
+  tag: "latest"
+  create-repo: false
+  dockerfile: Dockerfile
+
+workflows:
+  build-and-push:
+    jobs:
+      - aws-ecr/build-and-push-image:
+          <<: *common
+          name: build-nginx
+          context: cm
+          path: ./nginx
+          repo: cm-qa/nginx
+          filters:
+            branches:
+              only: main
+      - aws-ecr/build-and-push-image:
+          <<: *common
+          name: build-nginx-staging
+          context: cm-qa-staging
+          path: ./nginx
+          repo: cm-qa/nginx
+          filters:
+            branches:
+              only: staging
+      - aws-ecr/build-and-push-image:
+          <<: *common
+          name: build-fe
+          context: cm
+          path: ./frontend
+          repo: cm-qa/frontend
+          filters:
+            branches:
+              only: main
+      - aws-ecr/build-and-push-image:
+          <<: *common
+          name: build-fe-staging
+          context: cm-qa-staging
+          path: ./frontend
+          repo: cm-qa/frontend
+          filters:
+            branches:
+              only: staging
+      - aws-ecr/build-and-push-image:
+          <<: *common
+          name: build-be
+          context: cm
+          path: ./backend
+          repo: cm-qa/backend
+          filters:
+            branches:
+              only: main
+      - aws-ecr/build-and-push-image:
+          <<: *common
+          name: build-be-staging
+          context: cm-qa-staging
+          path: ./backend
+          repo: cm-qa/backend
+          filters:
+            branches:
+              only: staging
+      - aws-ecr/build-and-push-image:
+          <<: *common
+          name: build-splunk-worker
+          context: cm
+          path: ./splunkapi
+          repo: cm-qa/splunk-worker
+          filters:
+            branches:
+              only: main
+      - aws-ecr/build-and-push-image:
+          <<: *common
+          name: build-splunk-worker-staging
+          context: cm-qa-staging
+          path: ./splunkapi
+          repo: cm-qa/splunk-worker
+          filters:
+            branches:
+              only: staging
+      - aws-ecs/deploy-service-update:
+          requires:
+            - build-nginx
+            - build-fe
+            - build-be
+            - build-splunk-worker
+          context: cm
+          family: "${ECS_SERV_FAM}"
+          cluster-name: "${ECS_CLUSTER}"
+          aws-access-key-id: "${ACCESS_KEY_ID}"
+          aws-secret-access-key: "${SECRET_ACCESS_KEY}"
+          service-name: "${ECS_SERV_FAM}"
+          force-new-deployment: true
+      - aws-ecs/deploy-service-update:
+          requires:
+            - build-nginx-staging
+            - build-fe-staging
+            - build-be-staging
+            - build-splunk-worker-staging
+          context: cm-qa-staging
+          family: "${ECS_SERV_FAM}"
+          cluster-name: "${ECS_CLUSTER}"
+          aws-access-key-id: "${ACCESS_KEY_ID}"
+          aws-secret-access-key: "${SECRET_ACCESS_KEY}"
+          service-name: "${ECS_SERV_FAM}"
+          force-new-deployment: true
